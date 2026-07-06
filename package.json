@@ -13,5 +13,14 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.110.0",
     "node-telegram-bot-api": "^1.1.2"
-  }
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://bechoyena: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@github.com/bechoyena/bible-bot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bechoyena/bible-bot/issues"
+  },
+  "homepage": "https://github.com/bechoyena/bible-bot#readme"
 }
