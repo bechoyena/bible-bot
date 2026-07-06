@@ -5,7 +5,7 @@ http.createServer((req, res) => res.end('Bot is running!')).listen(process.env.P
 const TelegramBot = require('node-telegram-bot-api');
 
 // *** የቦትህ ትክክለኛ ቶከን ***
-const TOKEN = '8778040791:AAFwwXhBsNn1DjI7OrUMuT52wnFmVip3v_4'; 
+const TOKEN = '8778040791:AAFMzEidaDflppu8bNjS8MOOnmIEZNC4OA0'; 
 const bot = new TelegramBot(TOKEN, { polling: true });
 
 // *** የአድሚኖች ዝርዝር (6671917206 ያንተ ነው ፥ 5406168929 የአዲሱ አድሚን) ***
