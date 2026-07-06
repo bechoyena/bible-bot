@@ -5,11 +5,11 @@ http.createServer((req, res) => res.end('Bot is running!')).listen(process.env.P
 const TelegramBot = require('node-telegram-bot-api');
 
 // *** የቦትህ ቶከን ***
-const TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'; // እዚህ ጋር ያንተን የቦት Token 8778040791:AAFwwXhBsNn1DjI7OrUMuT52wnFmVip3v_4አስገባ;
+const TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'; //8778040791:AAFwwXhBsNn1DjI7OrUMuT52wnFmVip3v_4አስገባ;
 const bot = new TelegramBot(TOKEN, { polling: true });
 
 // *** ዋና ዋና መታወቂያዎች (IDs) ***
-const ADMIN_ID = 6671917206; // ያንተ አድሚን ID
+const ADMIN_ID = 5406168929; // ያንተ አድሚን ID
 const GROUP_ID = -1001937055873; // የፈተና ግሩፕ ID
 const DASHBOARD_URL = 'https://comforting-flan-22bd95.netlify.app/';
 
