@@ -1,3 +1,6 @@
+// Render እንዳይዘጋው ፖርት የሚከፍት ጥቃቅን ሰርቨር
+const http = require('http');
+http.createServer((req, res) => res.end('Bot is running!')).listen(process.env.PORT || 3000);
 const TelegramBot = require('node-telegram-bot-api').default || require('node-telegram-bot-api');
 const { createClient } = require('@supabase/supabase-js');
 
