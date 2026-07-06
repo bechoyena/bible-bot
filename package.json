@@ -1,25 +1,16 @@
 {
   "name": "bible-bot",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Bible Quiz Telegram Bot",
+  "main": "bot.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node bot.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "@supabase/supabase-js": "^2.110.0",
-    "node-telegram-bot-api": "^1.1.2"
+    "@supabase/supabase-js": "^2.43.4",
+    "node-telegram-bot-api": "^0.66.0"
   },
-  "devDependencies": {},
-  "repository": {
-    "type": "git",
-  },
-  "bugs": {
-    "url": "https://github.com/bechoyena/bible-bot/issues"
-  },
-  "homepage": "https://github.com/bechoyena/bible-bot#readme"
+  "author": "",
+  "license": "ISC"
 }
+
