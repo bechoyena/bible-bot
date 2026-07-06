@@ -1,11 +1,11 @@
 const TelegramBot = require('node-telegram-bot-api').default || require('node-telegram-bot-api');
 const { createClient } = require('@supabase/supabase-js');
 
-// ያንተ ትክክለኛ የቦት እና የዳታቤዝ መረጃዎች
 const API_TOKEN = '8778040791:AAGhnEfsNEuVaUtMxIy73MCx7bNLzQRxkj4';
 const SUPABASE_URL = "https://jdusgofvctxmfgrnrgjq.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkdXNnb2Z2Y3R4bWZncm5yZ2pxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjgwMjQ3MiwiZXhwIjoyMDk4Mzc4NDcyfQ.J-aBPwvBOD7PPb9YTXd28yuUnuXhp3xARslADs31MNY";
 
+// በሬንደር ላይ በፖሊንግ እንዲሰራ የተዘጋጀ
 const bot = new TelegramBot(API_TOKEN, { 
     polling: {
         autoStart: true,
@@ -15,9 +15,9 @@ const bot = new TelegramBot(API_TOKEN, {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// የድሮ የዌብሁክ ግጭት ካለ በግድ ማጽጃ
+// የድሮ የዌብሁክ ግጭት ካለ ማጽጃ (በሬንደር ላይ የግድ ያስፈልጋል)
 bot.deleteWebHook().then(() => {
-    console.log("🔄 የዌብሁክ ግንኙነት ሙሉ በሙሉ ጸድቷል!");
+    console.log("🔄 የዌብሁክ ግንኙነት ሙሉ በሙሉ ጸድቷል! ወደ ፖሊንግ ተቀይሯል።");
 });
 
 const main_menu = {
@@ -42,7 +42,6 @@ bot.on('message', async (msg) => {
     let text = msg.text.trim();
     console.log(`📩 መልዕክት ደርሷል፦ "${text}"`);
 
-    // ተጠቃሚው ስሜት ገላጭ ምስል (Emoji) ጨምሮ ቢጫን እንኳ ጽሑፉን ብቻ ለይቶ ማውጫ
     let cleanCategory = "";
     if (text.includes("ብሉይ ኪዳን")) cleanCategory = "ብሉይ ኪዳን";
     else if (text.includes("አዲስ ኪዳን")) cleanCategory = "አዲስ ኪዳን";
@@ -67,8 +66,8 @@ bot.on('message', async (msg) => {
             }
 
             if (!data || data.length === 0) {
-                console.log(`💡 ለ '${cleanCategory}' ምንም የተመዘገበ ዳታ አልተገኘም (ባዶ ነው)`);
-                bot.sendMessage(chatId, `💡 ይቅርታ፣ በ '${cleanCategory}' ምድብ ስር በዳታቤዙ ላይ የተመዘገበ ምንም ፈተና አልተገኘም። እባክዎ በ Supabase ላይ 'category' አጻጻፉ በትክክል መጻፉን ያረጋግጡ።`, main_menu);
+                console.log(`💡 ለ '${cleanCategory}' ምንም የተመዘገበ ዳታ አልተገኘም`);
+                bot.sendMessage(chatId, `💡 ይቅርታ፣ በ '${cleanCategory}' ምድብ ስር በዳታቤዙ ላይ የተመዘገበ ምንም ፈተና አልተገኘም።`, main_menu);
                 return;
             }
 
@@ -83,7 +82,6 @@ bot.on('message', async (msg) => {
                 if (name && link && !seen_groups.has(name)) {
                     seen_groups.add(name);
                     
-                    // የሊንኩን አጻጻፍ ማረጋገጫ (https:// መኖሩን)
                     let finalLink = link.trim();
                     if (!finalLink.startsWith('http://') && !finalLink.startsWith('https://')) {
                         finalLink = 'https://' + finalLink;
@@ -97,7 +95,7 @@ bot.on('message', async (msg) => {
             });
 
             if (inline_keyboard.length === 0) {
-                bot.sendMessage(chatId, "💡 በሰንጠረዡ ላይ ያሉት የፈተና ሊንኮች ወይም ስሞች ባዶ ናቸው።", main_menu);
+                bot.sendMessage(chatId, "💡 በሰንጠረዡ ላይ ያሉት የፈተና ሊንኮች ባዶ ናቸው።", main_menu);
                 return;
             }
 
@@ -107,11 +105,11 @@ bot.on('message', async (msg) => {
 
         } catch (err) {
             console.error("❌ ያልተጠበቀ ስህተት፦", err);
-            bot.sendMessage(chatId, "❌ መረጃውን በምናነብበት ጊዜ ያልተጠበቀ ስህተት ተከስቷል።", main_menu);
+            bot.sendMessage(chatId, "❌ መረጃውን በምናነብበት ጊዜ ስህተት ተከስቷል።", main_menu);
         }
     } else {
         bot.sendMessage(chatId, "⚠️ እባክዎ ከታች ካሉት አዝራሮች አንዱን ይጫኑ፦", main_menu);
     }
 });
 
-console.log("🚀 ቦቱ በTermux ላይ በንጽህና ስራ ጀምሯል...");
+console.log("🚀 ቦቱ በRender ላይ በንጽህና ስራ ጀምሯል...");
