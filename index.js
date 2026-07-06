@@ -5,7 +5,7 @@ http.createServer((req, res) => res.end('Bot is running!')).listen(process.env.P
 const TelegramBot = require('node-telegram-bot-api');
 
 // *** የቦትህ ቶከን ***
-const TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'; // እዚህ ጋር ያንተን የቦት Token አስገባ
+const TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'; // እዚህ ጋር ያንተን የቦት Token 8778040791:AAFwwXhBsNn1DjI7OrUMuT52wnFmVip3v_4አስገባ;
 const bot = new TelegramBot(TOKEN, { polling: true });
 
 // *** ዋና ዋና መታወቂያዎች (IDs) ***
