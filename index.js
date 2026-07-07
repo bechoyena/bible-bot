@@ -3,7 +3,7 @@ const http = require('http');
 http.createServer((req, res) => res.end('Bot is running!')).listen(process.env.PORT || 3000);
 
 const TelegramBot = require('node-telegram-bot-api');
-const { createClient } = require('@supabase/supabase-client');
+const { createClient } = require('@supabase/supabase-js');
 
 // *** አዲሱ የቦትህ ቶከን ***
 const TOKEN = '8778040791:AAFMzEidaDflppu8bNjS8MOOnmIEZNC4OA0'; 
