@@ -3,40 +3,96 @@ const http = require('http');
 http.createServer((req, res) => res.end('Bot is running!')).listen(process.env.PORT || 3000);
 
 const TelegramBot = require('node-telegram-bot-api');
+const { createClient } = require('@supabase/supabase-client');
 
-// *** የቦትህ ትክክለኛ ቶከን ***
+// *** አዲሱ የቦትህ ቶከን ***
 const TOKEN = '8778040791:AAFMzEidaDflppu8bNjS8MOOnmIEZNC4OA0'; 
 const bot = new TelegramBot(TOKEN, { polling: true });
 
-// *** የአድሚኖች ዝርዝር (6671917206 ያንተ ነው ፥ 5406168929 የአዲሱ አድሚን) ***
-const ADMIN_IDS = [6671917206, 5406168929]; 
+// *** ያንተ ትክክለኛ የ Supabase መረጃዎች ***
+const SUPABASE_URL = 'https://jdusgofvctxmfgrnrgjq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkdXNnb2Z2Y3R4bWZncm5yZ2pxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjgwMjQ3MiwiZXhwIjoyMDk4Mzc4NDcyfQ.J-aBPwvBOD7PPb9YTXd28yuUnuXhp3xARslADs31MNY';
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// *** የግሩፕ ID እና የዳሽቦርድ ሊንክ ***
+// *** የአድሚኖች ዝርዝር እና የዳሽቦርድ መረጃዎች ***
+const ADMIN_IDS = [6671917206, 5406168929]; 
 const GROUP_ID = -1001937055873; 
 const DASHBOARD_URL = 'https://comforting-flan-22bd95.netlify.app/';
 
-const botUsers = new Set();
-
-console.log('🚀 ቦቱ በRender ላይ በንጽህና ስራ ጀምሯል...');
-
-// ተጠቃሚዎች /start ሲሉ ID ቸውን መመዝገብ
-bot.onText(/\/start/, (msg) => {
-    const chatId = msg.chat.id;
-    if (msg.chat.type === 'private') {
-        botUsers.add(chatId);
+// =================================================================
+// ⌨️ የዋናው ማውጫ ኪይቦርድ (ከኪይቦርዱ በታች ሁልጊዜ የሚቀመጥ)
+// =================================================================
+const mainKeyboard = {
+    reply_markup: {
+        keyboard: [
+            [{ text: '📖 ብሉይ ኪዳን' }, { text: '📖 አዲስ ኪዳን' }],
+            [{ text: '📚 አጠቃላይ' }]
+        ],
+        resize_keyboard: true,
+        one_time_keyboard: false
     }
-    bot.sendMessage(chatId, 'እንኳን ወደ መጽሐፍ ቅዱስ የጥያቄና መልስ ቦት በሰላም መጡ! 👋\n\nፈተናዎችን ለመፈተን የተለቀቁትን ሊንኮች ይጠቀሙ።');
+};
+
+console.log('🚀 ቦቱ ከSupabase እና ከኪይቦርድ አማራጮች ጋር ስራ ጀምሯል...');
+
+// 1. የ /start ትዕዛዝ ሲላክ
+bot.onText(/\/start/, (msg) => {
+    bot.sendMessage(msg.chat.id, 'እንኳን ወደ መጽሐፍ ቅዱስ የጥያቄና መልስ ቦት በሰላም መጡ! 👋\n\nከታች ካሉት አማራጮች ውስጥ መፈተን የሚፈልጉትን ይምረጡ፦', mainKeyboard);
 });
 
-// የሁሉንም ተጠቃሚዎች ID መመዝገቢያ
-bot.on('message', (msg) => {
-    if (msg.chat.type === 'private') {
-        botUsers.add(msg.chat.id);
+// 2. የ /test ትዕዛዝ (ለአድሚኖች መፈተኛ)
+bot.onText(/\/test/, (msg) => {
+    bot.sendMessage(msg.chat.id, `✅ ቦቱ 100% በሰላም እየሰራ ነው!`, mainKeyboard);
+});
+
+// =================================================================
+// 🔄 ከዋናው ማውጫ ተጭነው ሲገቡ ከSupabase ሊንክ እየሳበ የሚያሳይ ክፍል
+// =================================================================
+bot.on('message', async (msg) => {
+    const chatId = msg.chat.id;
+    const text = msg.text;
+
+    if (text && text.startsWith('/')) return;
+
+    try {
+        // ሀ. ብሉይ ኪዳን ሲነካ ከSupabase የብሉይ ፈተናዎችን ይስባል
+        if (text === '📖 ብሉይ ኪዳን') {
+            const { data, error } = await supabase.from('exams').select('*').eq('category', 'old_testament');
+            if (error || !data || data.length === 0) {
+                return bot.sendMessage(chatId, '❌ የብሉይ ኪዳን ፈተናዎች በአሁኑ ሰዓት አልተገኙም።');
+            }
+            
+            const buttons = data.map(exam => [{ text: exam.title, web_app: { url: exam.link } }]);
+            bot.sendMessage(chatId, 'የብሉይ ኪዳን ፈተናዎችን ይምረጡ፦', { reply_markup: { inline_keyboard: buttons } });
+        } 
+        // ለ. አዲስ ኪዳን ሲነካ ከSupabase የአዲስ ፈተናዎችን ይስባል
+        else if (text === '📖 አዲስ ኪዳን') {
+            const { data, error } = await supabase.from('exams').select('*').eq('category', 'new_testament');
+            if (error || !data || data.length === 0) {
+                return bot.sendMessage(chatId, '❌ የአዲስ ኪዳን ፈተናዎች በአሁኑ ሰዓት አልተገኙም።');
+            }
+            
+            const buttons = data.map(exam => [{ text: exam.title, web_app: { url: exam.link } }]);
+            bot.sendMessage(chatId, 'የአዲስ ኪዳን ፈተናዎችን ይምረጡ፦', { reply_markup: { inline_keyboard: buttons } });
+        } 
+        // ሐ. አጠቃላይ ሲነካ ከSupabase አጠቃላይ ፈተናዎችን ይስባል
+        else if (text === '📚 አጠቃላይ') {
+            const { data, error } = await supabase.from('exams').select('*').eq('category', 'general');
+            if (error || !data || data.length === 0) {
+                return bot.sendMessage(chatId, '❌ አጠቃላይ ፈተናዎች በአሁኑ ሰዓት አልተገኙም።');
+            }
+            
+            const buttons = data.map(exam => [{ text: exam.title, web_app: { url: exam.link } }]);
+            bot.sendMessage(chatId, 'አጠቃላይ የክለሳ ፈተናዎችን ይምረጡ፦', { reply_markup: { inline_keyboard: buttons } });
+        }
+    } catch (err) {
+        console.error('Supabase Fetch Error:', err);
+        bot.sendMessage(chatId, '❌ መረጃ ከዳታቤዝ ላይ ሲሳብ ስህተት አጋጥሟል።');
     }
 });
 
 // =================================================================
-// 1. ለሁሉም አድሚኖች የ"ውጤት መያዣ" ቁልፍ የሚልክ ሲስተም
+// 🔔 ውጤትን ለሁለቱ አድሚኖች ከነ "ውጤት መያዣ" ዳሽቦርድ መላኪያ
 // =================================================================
 function sendResultToAdmin(studentName, examCode, score) {
     const messageText = `🔔 **አዲስ የተፈታኝ ውጤት ገብቷል!**\n\n` +
@@ -45,55 +101,28 @@ function sendResultToAdmin(studentName, examCode, score) {
                         `📊 **ውጤት:** ${score}\n\n` +
                         `ሙሉ ዝርዝሩን ለማየት ከታች ያለውን የውጤት መያዣ ገጽ ይክፈቱ።`;
 
-    // በዝርዝሩ ውስጥ ላሉት አድሚኖች በሙሉ መልዕክቱን በተን አድርጎ ይልካል
     ADMIN_IDS.forEach(adminId => {
         bot.sendMessage(adminId, messageText, {
             parse_mode: 'Markdown',
             reply_markup: {
-                inline_keyboard: [
-                    [
-                        {
-                            text: "📊 የውጤት መያዣ",
-                            web_app: { url: DASHBOARD_URL }
-                        }
-                    ]
-                ]
+                inline_keyboard: [[{ text: "📊 የውጤት መያዣ", web_app: { url: DASHBOARD_URL } }]]
             }
-        }).catch(err => console.error(`ለአድሚን ${adminId} መልዕክት መላክ አልተቻለም:`, err));
+        }).catch(err => console.error(`ለአድሚን ${adminId} መላክ አልተቻለም:`, err));
     });
 }
 
 // =================================================================
-// 2. አዳዲስ ጥያቄዎች ሲለቀቁ ለግሩፕ እና ለተከታዮች ማሰራጫ (Broadcast)
+// 📣 ለአድሚኖች ብቻ የፈተና ማሰራጫ (Broadcast)
 // =================================================================
 bot.onText(/\/broadcast (.+)/, (msg, match) => {
     const chatId = msg.chat.id;
     const broadcastMessage = match[1];
 
-    // የላከው ሰው ከአድሚኖቹ አንዱ መሆኑን ማረጋገጫ
     if (!ADMIN_IDS.includes(chatId)) {
         return bot.sendMessage(chatId, '❌ ይህንን ትዕዛዝ ለመጠቀም ፈቃድ የለዎትም።');
     }
 
-    // ሀ. ለግሩፑ መላክ
     bot.sendMessage(GROUP_ID, `📣 **አዲስ የፈተና ጥያቄ ተለቋል!**\n\n${broadcastMessage}`, { parse_mode: 'Markdown' })
-        .then(() => bot.sendMessage(chatId, '✅ መልዕክቱ ለግሩፑ ተልኳል።'))
+        .then(() => bot.sendMessage(chatId, '✅ መልዕክቱ ለግሩፑ በተሳካ ሁኔታ ተልኳል።'))
         .catch(err => bot.sendMessage(chatId, `❌ ለግሩፑ መላክ አልተቻለም: ${err.message}`));
-
-    // ለ. ለቦቱ ተከታዮች በሙሉ ማዳረስ
-    let successCount = 0;
-    botUsers.forEach((userId) => {
-        bot.sendMessage(userId, `📣 **አዲስ የፈተና ጥያቄ ተለቋል!**\n\n${broadcastMessage}`, { parse_mode: 'Markdown' })
-            .then(() => { successCount++; })
-            .catch(err => console.log(`ለተጠቃሚ ${userId} መላክ አልተቻለም`));
-    });
-
-    setTimeout(() => {
-        bot.sendMessage(chatId, `📢 ማሳወቂያ ለ ${successCount} የቦቱ ተከታዮች በግል ደርሷቸዋል።`);
-    }, 2000);
-});
-// ቦቱ መስራቱን ቴሌግራም ላይ መፈተኛ ሚስጥራዊ ኮድ
-bot.onText(/\/test/, (msg) => {
-    const chatId = msg.chat.id;
-    bot.sendMessage(chatId, `✅ ቦቱ 100% በሰላም እየሰራ ነው!\n\nየእርስዎ Chat ID: ${chatId}\nየአሁኑ ሰዓት: ${new Date().toLocaleTimeString('am-ET')}`);
 });
