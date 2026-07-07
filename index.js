@@ -92,3 +92,8 @@ bot.onText(/\/broadcast (.+)/, (msg, match) => {
         bot.sendMessage(chatId, `📢 ማሳወቂያ ለ ${successCount} የቦቱ ተከታዮች በግል ደርሷቸዋል።`);
     }, 2000);
 });
+// ቦቱ መስራቱን ቴሌግራም ላይ መፈተኛ ሚስጥራዊ ኮድ
+bot.onText(/\/test/, (msg) => {
+    const chatId = msg.chat.id;
+    bot.sendMessage(chatId, `✅ ቦቱ 100% በሰላም እየሰራ ነው!\n\nየእርስዎ Chat ID: ${chatId}\nየአሁኑ ሰዓት: ${new Date().toLocaleTimeString('am-ET')}`);
+});
