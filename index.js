@@ -137,7 +137,7 @@ supabase
   const newResult = payload.new;
   
   // ⚠️ ልብ በል፦ በ Supabase ዳታቤዝህ ውስጥ ያሉትን ትክክለኛ የአምድ ስሞች (Column Names) እዚህ ጋር ተካ!
-  const studentChatId = newResult.id || newResult.student_id; 
+  const studentChatId = newResult.chat_id || newResult.student_id; 
   const studentName = newResult.student_name || 'ተፈታኝ';
   const examCode = newResult.exam_code || 'ያልታወቀ';
   const score = Number(newResult.score || 0);
