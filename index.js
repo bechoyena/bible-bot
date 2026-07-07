@@ -11,7 +11,7 @@ const bot = new TelegramBot(TOKEN, { polling: true });
 
 // *** የ Supabase መረጃዎች ***
 const SUPABASE_URL = 'https://jdusgofvctxmfgrnrgjq.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkdXNnb2Z2Y3R4bWZncm5yZ2pxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcontainfQ.J-aBPwvBOD7PPb9YTXd28yuUnuXhp3xARslADs31MNY'; // ማሳሰቢያ፡ ሙሉ ቁልፍህን እዚህ ላይ አረጋግጥ
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkdXNnb2Z2Y3R4bWZncm5yZ2pxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjgwMjQ3MiwiZXhwIjoyMDk4Mzc4NDcyfQ.J-aBPwvBOD7PPb9YTXd28yuUnuXhp3xARslADs31MNY'; // ማሳሰቢያ፡ ሙሉ ቁልፍህን እዚህ ላይ አረጋግጥ
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const ADMIN_IDS = [6671917206, 5406168929]; 
@@ -29,7 +29,7 @@ const mainKeyboard = {
     }
 };
 
-console.log('🚀 ቦቱ ሁሉንም ማስተካከያዎች አካቶ ስራ ጀምሯል...');
+console.log('🚀 ቦቱ በደህንነትና በተሟላ አቅም ስራ ጀምሯል...');
 
 bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
