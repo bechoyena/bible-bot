@@ -116,7 +116,9 @@ function sendResultToAdmin(studentName, examCode, score, totalQuestions) {
         bot.sendMessage(adminId, messageText, {
             parse_mode: 'Markdown',
             reply_markup: {
-               inline_keyboard: [[{ text: "📊 የውጤት መያዣ", url: DASHBOARD_URL }]]
+               inline_keyboard: [
+                   [{ text: "📊 የውጤት መያዣ", url: DASHBOARD_URL }]
+                   ]
             }
         }).catch(err => console.error(`ለአድሚን ${adminId} መላክ አልተቻለም:`, err));
     });
