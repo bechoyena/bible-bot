@@ -11,7 +11,7 @@ const bot = new TelegramBot(TOKEN, { polling: true });
 
 // *** ያንተ ትክክለኛ የ Supabase መረጃዎች ***
 const SUPABASE_URL = 'https://jdusgofvctxmfgrnrgjq.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkdXNnb2Z2Y3R4bWZncm5yZ2pxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4MDI0NzIsImV4cCI6MjA5ODM3ODQ3Mn0.UdAPxvkiexWyBOWNpfvmrZ2Hf_whE5_hCS-L0LZzbgw';
+const SUPABASE_KEY = 'eyJhbGciOiJeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkdXNnb2Z2Y3R4bWZncm5yZ2pxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4MDI0NzIsImV4cCI6MjA5ODM3ODQ3Mn0.UdAPxvkiexWyeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkdXNnb2Z2Y3R4bWZncm5yZ2pxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjgwMjQ3MiwiZXhwIjoyMDk4Mzc4NDcyfQ.J-aBPwvBOD7PPb9YTXd28yuUnuXhp3xARslADs31MNYBOWNpfvmrZ2Hf_whE5_hCS-L0LZzbgw';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // *** የአድሚኖች ዝርዝር እና የዳሽቦርድ መረጃዎች ***
