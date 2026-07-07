@@ -130,7 +130,7 @@ supabase
   .channel('schema-db-changes')
   .on(
     'postgres_changes',
-    { event: 'INSERT', schema: 'public', table: 'student_results' }, // 'student_results' የሚለውን በሰንጠረዥህ ትክክለኛ ስም ተካው
+    { event: 'INSERT', schema: 'public', table: 'scores' }, // 'student_results' የሚለውን በሰንጠረዥህ ትክክለኛ ስም ተካው
     (payload) => {
       const newResult = payload.new;
       
