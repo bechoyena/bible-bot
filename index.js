@@ -9,9 +9,9 @@ const { createClient } = require('@supabase/supabase-js');
 const TOKEN = '8778040791:AAFMzEidaDflppu8bNjS8MOOnmIEZNC4OA0'; 
 const bot = new TelegramBot(TOKEN, { polling: true });
 
-// *** የ Supabase መረጃዎች ***
-const SUPABASE_URL = 'https://jdusgofvctxmfgrnrgjq.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkdXNnb2Z2Y3R4bWZncm5yZ2pxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjgwMjQ3MiwiZXhwIjoyMDk4Mzc4NDcyfQ.J-aBPwvBOD7PPb9YTXd28yuUnuXhp3xARslADs31MNY'; // ማሳሰቢያ፡ ሙሉ ቁልፍህን እዚህ ላይ አረጋግጥ
+// *** የ Supabase መረጃዎች (የተስተካከለ) ***
+const SUPABASE_URL = 'https://jdusgofvctxmfgrngrjq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkdXNnb2Z2Y3R4bWZncm5yZ2pxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjgwMjQ3MiwiZXhwIjoyMDk4Mzc4NDcyfQ.J-aBPwvBOD7PPb9YTXd28yuUnuXhp3xARslADs31MNY'; 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const ADMIN_IDS = [6671917206, 5406168929]; 
@@ -29,7 +29,7 @@ const mainKeyboard = {
     }
 };
 
-console.log('🚀 ቦቱ በደህንነትና በተሟላ አቅም ስራ ጀምሯል...');
+console.log('🚀 ቦቱ ሁሉንም ማስተካከያዎች አካቶ ስራ ጀምሯል...');
 
 bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
@@ -46,7 +46,7 @@ bot.onText(/\/test/, (msg) => {
     bot.sendMessage(msg.chat.id, `✅ ቦቱ 100% በሰላም እየሰራ ነው!`, mainKeyboard);
 });
 
-// 🔄 ከዳታቤዝ ላይ የሚስብ ክፍል
+// 🔄 ከዳታቤዝ ላይ ፈተናዎችን የሚስብ ክፍል
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text;
@@ -91,7 +91,6 @@ function sendFeedbackToStudent(studentChatId, studentName, examCode, score, tota
     const percentage = (score / totalQuestions) * 100;
     let feedbackMessage = `📊 **የፈተና ውጤትዎ ዝርዝር**\n\n📝 **የፈተናው ኮድ:** ${examCode}\n💯 **ያገኙት ውጤት:** ${score}/${totalQuestions} (${percentage.toFixed(1)}%)\n\n`;
 
-    // ውጤቱን አይቶ የማበረታቻ ወይም የማሻሻያ ምክር መምረጫ
     if (percentage >= 85) {
         feedbackMessage += `🌟 **ድንቅ ነው ${studentName}!** ቃልን በመንፈስና በእውቀት በሚገባ እያጠኑ መሆንዎን ውጤትዎ ያሳያል። ይህንን መልካም ልምድ በመቀጠል ለሌሎችም ምሳሌ ይሁኑ! በርቱ።`;
     } else if (percentage >= 60) {
@@ -122,6 +121,36 @@ function sendResultToAdmin(studentName, examCode, score, totalQuestions) {
         }).catch(err => console.error(`ለአድሚን ${adminId} መላክ አልተቻለም:`, err));
     });
 }
+
+// =================================================================
+// ⚡ 3. አዲስ ውጤት ዳታቤዝ ውስጥ ሲገባ (Insert ሲደረግ) ፈንክሽኖቹን የመቀስቀሻ ሰርጥ (Realtime Listener)
+// =================================================================
+// ማሳሰቢያ፡ በ Supabase Dashboard ላይ የ 'student_results' ሰንጠረዥ Replication -> Realtime መብራቱን አረጋግጥ።
+supabase
+  .channel('schema-db-changes')
+  .on(
+    'postgres_changes',
+    { event: 'INSERT', schema: 'public', table: 'student_results' }, // 'student_results' የሚለውን በሰንጠረዥህ ትክክለኛ ስም ተካው
+    (payload) => {
+      const newResult = payload.new;
+      
+      // ከዳታቤዝ የሚመጡትን ፊልዶች እዚህ ጋር ከሰንጠረዥህ አምዶች ስም ጋር አዛምዳቸው
+      const studentChatId = newResult.chat_id || newResult.student_id; 
+      const studentName = newResult.student_name || 'ተፈታኝ';
+      const examCode = newResult.exam_code || 'ያልታወቀ';
+      const score = Number(newResult.score || 0);
+      const totalQuestions = Number(newResult.total_questions || 10); // በነባሪ 10 ካልመጣ
+
+      if (studentChatId) {
+          // 1. ለተማሪው ምክርና ውጤት ይልካል
+          sendFeedbackToStudent(studentChatId, studentName, examCode, score, totalQuestions);
+      }
+      // 2. ለአድሚኖች ማሳወቂያና የዌብአፕ ሊንክ ይልካል
+      sendResultToAdmin(studentName, examCode, score, totalQuestions);
+    }
+  )
+  .subscribe();
+
 
 // =================================================================
 // 📣 ለአድሚኖች ብቻ የፈተና ማሰራጫ (Broadcast)
