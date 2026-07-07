@@ -10,7 +10,7 @@ const TOKEN = '8778040791:AAFMzEidaDflppu8bNjS8MOOnmIEZNC4OA0';
 const bot = new TelegramBot(TOKEN, { polling: true });
 
 // *** የ Supabase መረጃዎች (የተስተካከለ) ***
-const SUPABASE_URL = 'https://jdusgofvctxmfgrngrjq.supabase.co';
+const SUPABASE_URL = 'https://jdusgofvctxmfgrnrgjq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkdXNnb2Z2Y3R4bWZncm5yZ2pxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjgwMjQ3MiwiZXhwIjoyMDk4Mzc4NDcyfQ.J-aBPwvBOD7PPb9YTXd28yuUnuXhp3xARslADs31MNY'; 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
