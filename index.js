@@ -116,7 +116,7 @@ function sendResultToAdmin(studentName, examCode, score, totalQuestions) {
         bot.sendMessage(adminId, messageText, {
             parse_mode: 'Markdown',
             reply_markup: {
-                inline_keyboard: [[{ text: "📊 የውጤት መያዣ", web_app: { url: DASHBOARD_URL } }]]
+               inline_keyboard: [[{ text: "📊 የውጤት መያዣ", url: DASHBOARD_URL }]]
             }
         }).catch(err => console.error(`ለአድሚን ${adminId} መላክ አልተቻለም:`, err));
     });
@@ -130,24 +130,23 @@ supabase
   .channel('schema-db-changes')
   .on(
     'postgres_changes',
-    { event: 'INSERT', schema: 'public', table: 'scores' }, // 'student_results' የሚለውን በሰንጠረዥህ ትክክለኛ ስም ተካው
-    (payload) => {
-      const newResult = payload.new;
-      
-      // ከዳታቤዝ የሚመጡትን ፊልዶች እዚህ ጋር ከሰንጠረዥህ አምዶች ስም ጋር አዛምዳቸው
-      const studentChatId = newResult.chat_id || newResult.student_id; 
-      const studentName = newResult.student_name || 'ተፈታኝ';
-      const examCode = newResult.exam_code || 'ያልታወቀ';
-      const score = Number(newResult.score || 0);
-      const totalQuestions = Number(newResult.total_questions || 10); // በነባሪ 10 ካልመጣ
-
-      if (studentChatId) {
-          // 1. ለተማሪው ምክርና ውጤት ይልካል
-          sendFeedbackToStudent(studentChatId, studentName, examCode, score, totalQuestions);
-      }
-      // 2. ለአድሚኖች ማሳወቂያና የዌብአፕ ሊንክ ይልካል
-      sendResultToAdmin(studentName, examCode, score, totalQuestions);
-    }
+{ event: 'INSERT', schema: 'public', table: 'scores' }, // ሰንጠረዡ ወደ 'scores' ተቀይሯል
+(payload) => {
+  const newResult = payload.new;
+  
+  // ⚠️ ልብ በል፦ በ Supabase ዳታቤዝህ ውስጥ ያሉትን ትክክለኛ የአምድ ስሞች (Column Names) እዚህ ጋር ተካ!
+  const studentChatId = newResult.id || newResult.student_id; 
+  const studentName = newResult.student_name || 'ተፈታኝ';
+  const examCode = newResult.exam_code || 'ያልታወቀ';
+  const score = Number(newResult.score || 0);
+  const totalQuestions = Number(newResult.total_questions || 10);
+ 
+ 
+  if (studentChatId) {
+      sendFeedbackToStudent(studentChatId, studentName, examCode, score, totalQuestions);
+  }
+  sendResultToAdmin(studentName, examCode, score, totalQuestions);
+}
   )
   .subscribe();
 
