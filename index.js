@@ -1,3 +1,4 @@
+// Render እንዳይዘጋው ፖርት የሚከፍት ጥቃቅን ሰርቨር
 const http = require('http');
 http.createServer((req, res) => res.end('Bot is running!')).listen(process.env.PORT || 3000);
 
@@ -10,7 +11,7 @@ const bot = new TelegramBot(TOKEN, { polling: true });
 
 // *** የ Supabase መረጃዎች ***
 const SUPABASE_URL = 'https://jdusgofvctxmfgrnrgjq.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkdXNnb2Z2Y3R4bWZncm5yZ2pxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjgwMjQ3MiwiZXhwIjoyMDk4Mzc4NDcyfQ.J-aBPwvBOD7PPb9YTXd28yuUnuXhp3xARslADs31MNY';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkdXNnb2Z2Y3R4bWZncm5yZ2pxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcontainfQ.J-aBPwvBOD7PPb9YTXd28yuUnuXhp3xARslADs31MNY'; // ማሳሰቢያ፡ ሙሉ ቁልፍህን እዚህ ላይ አረጋግጥ
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const ADMIN_IDS = [6671917206, 5406168929]; 
@@ -28,7 +29,7 @@ const mainKeyboard = {
     }
 };
 
-console.log('🚀 ቦቱ በደህንነትና በተሟላ አቅም ስራ ጀምሯል...');
+console.log('🚀 ቦቱ ሁሉንም ማስተካከያዎች አካቶ ስራ ጀምሯል...');
 
 bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
@@ -45,7 +46,7 @@ bot.onText(/\/test/, (msg) => {
     bot.sendMessage(msg.chat.id, `✅ ቦቱ 100% በሰላም እየሰራ ነው!`, mainKeyboard);
 });
 
-// 🔄 ከዳታቤዝ ላይ በትክክለኛው የካቴጎሪ ስም የሚስብ ክፍል
+// 🔄 ከዳታቤዝ ላይ የሚስብ ክፍል
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text;
@@ -83,16 +84,48 @@ bot.on('message', async (msg) => {
     }
 });
 
-function sendResultToAdmin(studentName, examCode, score) {
-    const messageText = `🔔 **አዲስ የተፈታኝ ውጤት ገብቷል!**\n\n👤 **ስም:** ${studentName}\n🔑 **ኮድ:** ${examCode}\n📊 **ውጤት:** ${score}`;
+// =================================================================
+// 🌟 1. ተፈታኙ ፈተናውን ሲጨርስ የማበረታቻ/የማሻሻያ መልዕክት ለባለቤቱ መላኪያ
+// =================================================================
+function sendFeedbackToStudent(studentChatId, studentName, examCode, score, totalQuestions) {
+    const percentage = (score / totalQuestions) * 100;
+    let feedbackMessage = `📊 **የፈተና ውጤትዎ ዝርዝር**\n\n📝 **የፈተናው ኮድ:** ${examCode}\n💯 **ያገኙት ውጤት:** ${score}/${totalQuestions} (${percentage.toFixed(1)}%)\n\n`;
+
+    // ውጤቱን አይቶ የማበረታቻ ወይም የማሻሻያ ምክር መምረጫ
+    if (percentage >= 85) {
+        feedbackMessage += `🌟 **ድንቅ ነው ${studentName}!** ቃልን በመንፈስና በእውቀት በሚገባ እያጠኑ መሆንዎን ውጤትዎ ያሳያል። ይህንን መልካም ልምድ በመቀጠል ለሌሎችም ምሳሌ ይሁኑ! በርቱ።`;
+    } else if (percentage >= 60) {
+        feedbackMessage += `👍 **በጣም ጥሩ ነው ${studentName}!** ያመጡት ውጤት የሚበረታታ ነው። ነገር ግን ጥቂት ደካማ ጎኖችን በማስተካከል በሚቀጥሉት ፈተናዎች ከዚህ የተሻለ የላቀ ውጤት ማምጣት እንደሚችሉ እናምናለን። ቃሉን ማንበብዎን ይግፉበት!`;
+    } else {
+        feedbackMessage += `📖 **አይዞዎት ${studentName}!** ይህ ፈተና ጥንካሬዎን የሚያሳድጉበት አጋጣሚ ነው። መጽሐፍ ቅዱስን በይበልጥ በጥንቃቄ በማንበብና ቃሉን በመመርመር በሚቀጥለው ጊዜ ውጤትዎን ማሻሻል ይችላሉ። ተስፋ ሳይቆርጡ በጸሎት በትጉ!`;
+    }
+
+    bot.sendMessage(studentChatId, feedbackMessage, { parse_mode: 'Markdown' })
+        .catch(err => console.error(`ለተፈታኙ ${studentChatId} ግብረመልስ መላክ አልተቻለም:`, err));
+}
+
+// =================================================================
+// 🔔 2. ውጤትን ለአድሚኖች በዌብ አፕ በተን መልክ "አዲስ የፈተና ውጤት መቷል" በሚል መላኪያ
+// =================================================================
+function sendResultToAdmin(studentName, examCode, score, totalQuestions) {
+    const messageText = `🔔 **አዲስ የፈተና ውጤት መቷል፤ ገብተው ይመልከቱ!**\n\n` +
+                        `👤 **የተፈታኝ ስም:** ${studentName}\n` +
+                        `🔑 **የፈተና ኮድ:** ${examCode}\n` +
+                        `📊 **ያገኘው ውጤት:** ${score}/${totalQuestions}`;
+
     ADMIN_IDS.forEach(adminId => {
         bot.sendMessage(adminId, messageText, {
             parse_mode: 'Markdown',
-            reply_markup: { inline_keyboard: [[{ text: "📊 የውጤት መያዣ", web_app: { url: DASHBOARD_URL } }]] }
-        }).catch(err => console.error(err));
+            reply_markup: {
+                inline_keyboard: [[{ text: "📊 የውጤት መያዣ", web_app: { url: DASHBOARD_URL } }]]
+            }
+        }).catch(err => console.error(`ለአድሚን ${adminId} መላክ አልተቻለም:`, err));
     });
 }
 
+// =================================================================
+// 📣 ለአድሚኖች ብቻ የፈተና ማሰራጫ (Broadcast)
+// =================================================================
 bot.onText(/\/broadcast (.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
     const broadcastMessage = match[1];
