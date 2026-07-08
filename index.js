@@ -187,11 +187,10 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
 
 // ⏰ በየቀኑ በትክክል ማታ 2:00 ሰዓት (20:00) ሲሆን ይሄ ፈንክሽን ይነሳል
 // (ማሳሰቢያ፦ Render ሰርቨር ላይ ሰዓቱ የለንደን/UTC ከሆነ ከቀኑ 11:00 ሰዓት ማለት ማታ 2:00 ስለሆነ '0 17 * * *' ማድረግ ሊያስፈልግ ይችላል)
-cron.schedule('14 12 * * *', async () => {
-    console.log('⏰ የንባብ ፕሮግራም ሰዓት ደርሷል፣ የዕለቱን ጥቅስ በመፈለግ ላይ...');
-    
+// ⏰ በኢትዮጵያ አቆጣጠር በትክክል ከቀኑ 12:25 (በአገርኛ 6:25) ሲሆን ይልካል
+cron.schedule('30 12 * * *', async () => {
+    console.log('⏰ የንባብ ፕሮግራም ሰዓት ደርሷል...');
     try {
-        // 1. ከዳታቤዝ ላይ ያልተላከውን የመጀመሪያውን ጥቅስ በቅደም ተከተል (id) መሳብ
         const { data: reading, error } = await supabase
             .from('daily_readings')
             .select('*')
@@ -201,39 +200,34 @@ cron.schedule('14 12 * * *', async () => {
             .single();
 
         if (error || !reading) {
-            console.log('⚠️ በ daily_readings ሰንጠረዥ ውስጥ ያልተላከ አዲስ ጥቅስ አልተገኘም!');
+            console.log('⚠️ ያልተላከ ጥቅስ ዳታቤዝ ውስጥ የለም!');
             return;
         }
 
-// 🔢 ቀኑን ከዳታቤዙ ID ላይ መውሰድ (ለምሳሌ id 1 ከሆነ 1ኛ ቀን፣ id 2 ከሆነ 2ኛ ቀን...)
-const dayNumber = reading.id; 
+        const dayNumber = reading.id; 
+        let challengeDay = dayNumber % 15;
+        if (challengeDay === 0) challengeDay = 15;
 
-// 🔄 የ 15 ቀኑን ቻሌንጅ መቆጣጠሪያ (15 ሲሞላ መልሶ 1 እንዲሆን ማድረጊያ ሂሳብ)
-let challengeDay = dayNumber % 15;
-if (challengeDay === 0) {
-    challengeDay = 15; // ቀሪው 0 ከሆነ 15ኛ ቀን ነው ማለት ነው
-}
+        const messageText = 
+            `${dayNumber}ኛ ቀን፦\n` +
+            `📖 የዕለቱ የመጽሐፍ ቅዱስ ንባብ ክፍል\n` +
+            `📍 ${reading.reading_text}\n` +
+            `365 ቀናትን በቃሉ ውስጥ!\n` +
+            `(የ15 ቀን Challenge Day ${challengeDay})\n` +
+            `"የእግዚአብሔር ቃል ለእግሬ መብራት፥ ለመንገዴም ብርሃን ነው።" (መዝ 119:105)`;
 
-// ✍️ በየቀኑ በራስ-ሰር የሚቀያየርበት ትክክለኛው መልዕክት
-const messageText = 
-    `${dayNumber}ኛ ቀን፦\n` +
-    `📖 የዕለቱ የመጽሐፍ ቅዱስ ንባብ ክፍል\n` +
-    `📍 ${reading.reading_text}\n` +
-    `365 ቀናትን በቃሉ ውስጥ!\n` +
-    `(የ15 ቀን Challenge Day ${challengeDay})\n` +
-    `"የእግዚአብሔር ቃል ለእግሬ መብራት፥ ለመንገዴም ብርሃን ነው።" (መዝ 119:105)`;
-    
-        // 🚀 ወደ ቴሌግራም ግሩፑ መላክ
         await bot.sendMessage(GROUP_ID, messageText);
-        console.log(`✅ የ ${dayNumber}ኛ ቀን መልዕክት በተሳካ ሁኔታ ተልኳል!`);
-
-        // 3. ጥቅሱ በድጋሚ እንዳይላክ በዳታቤዙ ላይ 'is_sent' የሚለውን true ማድረግ
+        console.log('✅ መልዕክቱ በኢትዮጵያ ሰዓት ተልኳል!');
+        
         await supabase
             .from('daily_readings')
             .update({ is_sent: true })
             .eq('id', reading.id);
 
     } catch (err) {
-        console.error('❌ በየቀኑ አውቶማቲክ ጥቅስ ለመላክ ሲሞከር ስህተት አጋጥሟል:', err);
+        console.error('ኤረር:', err);
     }
+}, {
+    scheduled: true,
+    timezone: "Africa/Addis_Ababa" // 👈 ይህ መስመር የኢትዮጵያን ሰዓት በቀጥታ ያስገድዳል!
 });
