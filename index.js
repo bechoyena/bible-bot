@@ -188,22 +188,30 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
 // ⏰ በየቀኑ በትክክል ማታ 2:00 ሰዓት (20:00) ሲሆን ይሄ ፈንክሽን ይነሳል
 // (ማሳሰቢያ፦ Render ሰርቨር ላይ ሰዓቱ የለንደን/UTC ከሆነ ከቀኑ 11:00 ሰዓት ማለት ማታ 2:00 ስለሆነ '0 17 * * *' ማድረግ ሊያስፈልግ ይችላል)
 // ⏰ በኢትዮጵያ አቆጣጠር በትክክል ከቀኑ 12:25 (በአገርኛ 6:25) ሲሆን ይልካል
-cron.schedule('* * * * *', async () => {
-    console.log('⏰ የንባብ ፕሮግራም ሰዓት ደርሷል...');
+cron.schedule('51 7 * * *', async () => {
+    console.log('⏰ የንባብ ፕሮግራም ሰዓት ደርሷል፣ ከዳታቤዝ እየፈለግኩ ነው...');
     try {
-        const { data: reading, error } = await supabase
+        // 1. ሁሉንም 'false' የሆኑትን መረጃዎች መሳብ
+        const { data: readings, error } = await supabase
             .from('daily_readings')
             .select('*')
             .eq('is_sent', false)
-            .order('id', { ascending: true })
-            .limit(1)
-            .single();
+            .order('id', { ascending: true });
 
-        if (error || !reading) {
-            console.log('⚠️ ያልተላከ ጥቅስ ዳታቤዝ ውስጥ የለም!');
+        // የዳታቤዝ ስህተት ካለ በሎግ ላይ እንዲያሳይ
+        if (error) {
+            console.error('❌ Supabase Error:', error.message);
             return;
         }
 
+        // የመጣው ዳታ ባዶ ከሆነ ስንት ዳታ እንደመጣ ይናገራል
+        if (!readings || readings.length === 0) {
+            console.log('⚠️ በ daily_readings ሰንጠረዥ ውስጥ 0 ያልተላከ ጥቅስ ነው የተገኘው! (RLS ወይም የስም ስህተት ሊሆን ይችላል)');
+            return;
+        }
+
+        // ከመጡት ጥቅሶች ውስጥ የመጀመሪያውን መውሰድ
+        const reading = readings[0];
         const dayNumber = reading.id; 
         let challengeDay = dayNumber % 15;
         if (challengeDay === 0) challengeDay = 15;
@@ -214,18 +222,19 @@ cron.schedule('* * * * *', async () => {
             `📍 ${reading.reading_text}\n` +
             `365 ቀናትን በቃሉ ውስጥ!\n` +
             `(የ15 ቀን Challenge Day ${challengeDay})\n` +
-            `"የእግዚአብሔር ቃል ለእግሬ መብራት፥ ለመንገዴም ብርሃን ነው።" (መዝ 119:105)`;
+            `"ህግህ ለእግሬ መብራት፥ ለመንገዴም ብርሃን ነው።" (መዝ 119:105)`;
 
         await bot.sendMessage(GROUP_ID, messageText);
-        console.log('✅ መልዕክቱ በኢትዮጵያ ሰዓት ተልኳል!');
+        console.log(`✅ የ ${dayNumber}ኛ ቀን መልዕክት በኢትዮጵያ ሰዓት ተልኳል!`);
         
+        // የተላከውን ጥቅስ ወደ true መቀየር
         await supabase
             .from('daily_readings')
             .update({ is_sent: true })
             .eq('id', reading.id);
 
     } catch (err) {
-        console.error('ኤረር:', err);
+        console.error('❌ ያልተጠበቀ ስህተት አጋጥሟል:', err);
     }
 }, {
     scheduled: true,
