@@ -188,7 +188,7 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
 // ⏰ በየቀኑ በትክክል ማታ 2:00 ሰዓት (20:00) ሲሆን ይሄ ፈንክሽን ይነሳል
 // (ማሳሰቢያ፦ Render ሰርቨር ላይ ሰዓቱ የለንደን/UTC ከሆነ ከቀኑ 11:00 ሰዓት ማለት ማታ 2:00 ስለሆነ '0 17 * * *' ማድረግ ሊያስፈልግ ይችላል)
 // ⏰ በኢትዮጵያ አቆጣጠር በትክክል ከቀኑ 12:25 (በአገርኛ 6:25) ሲሆን ይልካል
-cron.schedule('30 12 * * *', async () => {
+cron.schedule('* * * * *', async () => {
     console.log('⏰ የንባብ ፕሮግራም ሰዓት ደርሷል...');
     try {
         const { data: reading, error } = await supabase
