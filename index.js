@@ -188,9 +188,8 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
 // ⏰ በየቀኑ በትክክል ማታ 2:00 ሰዓት (20:00) ሲሆን ይሄ ፈንክሽን ይነሳል
 // (ማሳሰቢያ፦ Render ሰርቨር ላይ ሰዓቱ የለንደን/UTC ከሆነ ከቀኑ 11:00 ሰዓት ማለት ማታ 2:00 ስለሆነ '0 17 * * *' ማድረግ ሊያስፈልግ ይችላል)
 // ⏰ በኢትዮጵያ አቆጣጠር በትክክል ከቀኑ 12:25 (በአገርኛ 6:25) ሲሆን ይልካል
-// 30 ማለት ደቂቃው ነው፣ 0 ማለት በUTC ከሌሊቱ 00 ሰዓት (24:00) ማለት ነው
 cron.schedule('30 0 * * *', async () => {
- console.log('⏰ የንባብ ፕሮግራም ሰዓት ደርሷል፣ ከዳታቤዝ እየፈለግኩ ነው...');
+    console.log('⏰ የንባብ ፕሮግራም ሰዓት ደርሷል፣ ከዳታቤዝ እየፈለግኩ ነው...');
     try {
         // 1. ሁሉንም 'false' የሆኑትን መረጃዎች መሳብ
         const { data: readings, error } = await supabase
@@ -213,9 +212,17 @@ cron.schedule('30 0 * * *', async () => {
 
         // ከመጡት ጥቅሶች ውስጥ የመጀመሪያውን መውሰድ
         const reading = readings[0];
-        const dayNumber = reading.id; 
-        let challengeDay = dayNumber % 15;
-        if (challengeDay === 0) challengeDay = 15;
+// 🔢 ቀኑን ከዳታቤዙ ID ላይ መውሰድ
+const dayNumber = reading.id; 
+
+// 🔄 ካለፈው በእጅ ከነበረው አቆጣጠር ጋር ማጣጣሚያ ሂሳብ (Offset)
+// ከዋናው ቀን ላይ 5 ቀን ቀንሰን በ15 ስናካፍለው አንተ የፈለግከውን ትክክለኛ ቀን ይሰጠናል
+let challengeDay = (dayNumber - 5) % 15;
+
+// ሂሳቡ ወደ ኋላ ሄዶ 0 ወይም ከዜሮ በታች እንዳይሆን መከላከያ
+if (challengeDay <= 0) {
+    challengeDay = challengeDay + 15;
+}
 
         const messageText = 
             `${dayNumber}ኛ ቀን፦\n` +
