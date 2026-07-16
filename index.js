@@ -17,7 +17,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const ADMIN_IDS = [6671917206, 5406168929]; 
 const GROUP_ID = -1001937055873; 
-const DASHBOARD_URL = 'https://comforting-flan-22bd95.netlify.app/';
+const DASHBOARD_URL = 'https://bechoyena.github.io/Bible-quiz/ውጤት መያዣ.html';
 
 const mainKeyboard = {
     reply_markup: {
