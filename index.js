@@ -48,40 +48,91 @@ bot.onText(/\/test/, (msg) => {
 });
 
 // 🔄 ከዳታቤዝ ላይ ፈተናዎችን የሚስብ ክፍል
+// 🔄 ከዳታቤዝ ላይ ፈተናዎችን በምዕራፍ/በመጽሐፍ ዝርዝር የሚስብ ክፍል
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text;
 
     if (text && text.startsWith('/')) return;
 
+    // 39ኙ የብሉይ ኪዳን መጻሕፍት ዝርዝር (ከመጻፊያው በታች የሚመቱ)
+    const oldTestamentBooks = [
+        ['ዘፍጥረት', 'ዘፀዓት', 'ዘሌዋውያን'], ['ዘኁልቁ', 'ዘዳግም', 'ኢያሱ'],
+        ['መሣፍንት', 'ሩት', '1 ሳሙኤል'], ['2 ሳሙኤል', '1 ነገሥት', '2 ነገሥት'],
+        ['1 ዜና', '2 ዜና', 'ዕዝራ'], ['ነህምያ', 'አስቴር', 'ኢዮብ'],
+        ['መዝሙር', 'ምሳሌ', 'መክብብ'], ['መኃልዬ መኃልይ', 'ኢሳይያስ', 'ኤርምያስ'],
+        ['ሰቆቃው ኤርምያስ', 'ሕዝቅኤል', 'ዳንኤል'], ['ሆሴዕ', 'ኢዩኤል', 'አሞፅ'],
+        ['አብድዩ', 'ዮናስ', 'ሚክያስ'], ['ናሆም', 'ዕንባቆም', 'ሶፎንያስ'],
+        ['ሐጌ', 'ዘካርያስ', 'ሚልኪያስ'],
+        ['🔙 ወደ ዋና ማውጫ']
+    ];
+
+    // 27ቱ የአዲስ ኪዳን መጻሕፍት ዝርዝር (ከመጻፊያው በታች የሚመቱ)
+    const newTestamentBooks = [
+        ['ማቴዎስ', 'ማርቆስ', 'ሉቃስ'], ['ዮሐንስ', 'ሐዋርያት'],
+        ['ሮሜ', '1 ቆሮንቶስ', '2 ቆሮንቶስ'], ['ገላትያ', 'ኤፌሶን', 'ፊልጵስዩስ'],
+        ['ቆላስይስ', '1 ተሰሎንቄ', '2 2 ተሰሎንቄ'], ['1 ጢሞቴዎስ', '2 ጢሞቴዎስ', 'ቲቶ'],
+        ['ፊልሞና', 'ዕብራውያን', 'ያዕቆብ'], ['1 ጴጥሮስ', '2 ጴጥሮስ', '1 ዮሐንስ'],
+        ['2 ዮሐንስ', '3 ዮሐንስ', 'ይሁዳ'], ['ዮሐንስ ራዕይ'],
+        ['🔙 ወደ ዋና ማውጫ']
+    ];
+
+    // የአጠቃላይ ምርጫዎች ዝርዝር (ከመጻፊያው በታች የሚመቱ)
+    const generalOptions = [
+        [{ text: 'የብሉይ ኪዳን ጥያቄዎች' }, { text: 'የአዲስ ኪዳን ጥያቄዎች' }],
+        [{ text: '🔙 ወደ ዋና ማውጫ' }]
+    ];
+
     try {
+        // --- 1. ዋና ቁልፎች ሲነኩ ከመጻፊያው በታች አማራጭ ማሳየት ---
         if (text === '📖 ብሉይ ኪዳን') {
-            const { data, error } = await supabase.from('exams').select('*').eq('category', 'old_testament');
-            if (error || !data || data.length === 0) {
-                return bot.sendMessage(chatId, '❌ የብሉይ ኪዳን ፈተናዎች በአሁኑ ሰዓት አልተገኙም።', mainKeyboard);
-            }
-            const buttons = data.map(exam => [{ text: exam.title, web_app: { url: exam.link } }]);
-            bot.sendMessage(chatId, 'የብሉይ ኪዳን ፈተናዎችን ይምረጡ፦', { reply_markup: { inline_keyboard: buttons } });
+            return bot.sendMessage(chatId, 'የብሉይ ኪዳን መጽሐፍትን ከታች ይምረጡ፦', {
+                reply_markup: { keyboard: oldTestamentBooks, resize_keyboard: true }
+            });
         } 
         else if (text === '📖 አዲስ ኪዳን') {
-            const { data, error } = await supabase.from('exams').select('*').eq('category', 'new_testament');
-            if (error || !data || data.length === 0) {
-                return bot.sendMessage(chatId, '❌ የአዲስ ኪዳን ፈተናዎች በአሁኑ ሰዓት አልተገኙም።', mainKeyboard);
-            }
-            const buttons = data.map(exam => [{ text: exam.title, web_app: { url: exam.link } }]);
-            bot.sendMessage(chatId, 'የአዲስ ኪዳን ፈተናዎችን ይምረጡ፦', { reply_markup: { inline_keyboard: buttons } });
+            return bot.sendMessage(chatId, 'የአዲስ ኪዳን መጽሐፍትን ከታች ይምረጡ፦', {
+                reply_markup: { keyboard: newTestamentBooks, resize_keyboard: true }
+            });
         } 
         else if (text === '📚 አጠቃላይ') {
-            const { data, error } = await supabase.from('exams').select('*').eq('category', 'general');
-            if (error || !data || data.length === 0) {
-                return bot.sendMessage(chatId, '❌ አጠቃላይ ፈተናዎች በአሁኑ ሰዓት አልተገኙም።', mainKeyboard);
-            }
-            const buttons = data.map(exam => [{ text: exam.title, web_app: { url: exam.link } }]);
-            bot.sendMessage(chatId, 'አጠቃላይ የክለሳ ፈተናዎችን ይምረጡ፦', { reply_markup: { inline_keyboard: buttons } });
+            return bot.sendMessage(chatId, 'የክለሳ ዘርፍ ከታች ይምረጡ፦', {
+                reply_markup: { keyboard: generalOptions, resize_keyboard: true }
+            });
         }
+        else if (text === '🔙 ወደ ዋና ማውጫ') {
+            return bot.sendMessage(chatId, 'ወደ ዋናው ማውጫ ተመልሰዋል፦', mainKeyboard);
+        }
+
+        // --- 2. ማንኛውም ንዑስ ክፍል ሲነካ በየምድቡ (Category) ያሉትን ሁሉንም ፈተናዎች ከመጻፊያው በላይ ማምጣት ---
+        const allOldBooks = oldTestamentBooks.flat();
+        const allNewBooks = newTestamentBooks.flat();
+        
+        if (allOldBooks.includes(text) || allNewBooks.includes(text) || text === 'የብሉይ ኪዳን ጥያቄዎች' || text === 'የአዲስ ኪዳን ጥያቄዎች') {
+            
+            // 💡 ማሳሰቢያ፦ በ Supabase 'exams' ሰንጠረዥ ውስጥ በ 'category' አምድ ስር የተጫነውን ስም ፈልጎ ያመጣል
+            // (ለምሳሌ፦ በ category አምድ ላይ "የብሉይ ኪዳን ጥያቄዎች" ተብለው የተመዘገቡትን "ብሉይ ኪዳን - 1"፣ "ብሉይ ኪዳን - 2" የተባሉ ርዕሶችን በሙሉ ይስባል)
+            const { data, error } = await supabase
+                .from('exams')
+                .select('*')
+                .eq('category', text)
+                .order('title', { ascending: true }); // በቅደም ተከተል እንዲመጡ
+
+            if (error || !data || data.length === 0) {
+                return bot.sendMessage(chatId, `❌ ለ "${text}" የተዘጋጁ የፈተና ዝርዝሮች በዳታቤዝ ውስጥ አልተገኑም።`);
+            }
+
+            // የመጡትን ፈተናዎች በሙሉ (ለምሳሌ፦ ብሉይ ኪዳን-1፣ ብሉይ ኪዳን-2...) ወደ ሰማያዊ Inline ቁልፍ መቀየር
+            const inlineButtons = data.map(exam => [{ text: `🚀 ${exam.title}`, web_app: { url: exam.link } }]);
+            
+            bot.sendMessage(chatId, `✨ ለ "${text}" የተገኙ ፈተናዎች ዝርዝር ከመጻፊያው በላይ ቀርቧል። መፈተን የሚፈልጉትን መርጠው ይጫኑ፦`, {
+                reply_markup: { inline_keyboard: inlineButtons }
+            });
+        }
+
     } catch (err) {
         console.error('Supabase Fetch Error:', err);
-        bot.sendMessage(chatId, '❌ መረጃ ከዳታቤዝ ላይ ሲሳብ ስህተት አጋጥሟል።', mainKeyboard);
+        bot.sendMessage(chatId, '❌ መረጃ ከዳታቤዝ ላይ ሲሳብ ስህተት አጋጥሟል።');
     }
 });
 
