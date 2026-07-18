@@ -177,33 +177,54 @@ function sendResultToAdmin(studentName, examCode, score, totalQuestions) {
 }
 
 // =================================================================
-// ⚡ 3. አዲስ ውጤት ዳታቤዝ ውስጥ ሲገባ (Insert ሲደረግ) ፈንክሽኖቹን የመቀስቀሻ ሰርጥ (Realtime Listener)
+// ⚡ 3. አዲስ ውጤት ዳታቤዝ ውስጥ ሲገባ ፈንክሽኖቹን የመቀስቀሻ ሰርጥ (የተስተካከለ)
 // =================================================================
-// ማሳሰቢያ፡ በ Supabase Dashboard ላይ የ 'student_results' ሰንጠረዥ Replication -> Realtime መብራቱን አረጋግጥ።
 supabase
   .channel('schema-db-changes')
   .on(
     'postgres_changes',
-{ event: 'INSERT', schema: 'public', table: 'scores' }, // ሰንጠረዡ ወደ 'scores' ተቀይሯል
-(payload) => {
-  const newResult = payload.new;
-  
-  // ⚠️ ልብ በል፦ በ Supabase ዳታቤዝህ ውስጥ ያሉትን ትክክለኛ የአምድ ስሞች (Column Names) እዚህ ጋር ተካ!
-  const studentChatId = newResult.chat_id || newResult.student_id; 
-  const studentName = newResult.student_name || 'ተፈታኝ';
-  const examCode = newResult.exam_code || 'ያልታወቀ';
-  const score = Number(newResult.score || 0);
-  const totalQuestions = Number(newResult.total_questions || 10);
- 
- 
-  if (studentChatId) {
-      sendFeedbackToStudent(studentChatId, studentName, examCode, score, totalQuestions);
-  }
-  sendResultToAdmin(studentName, examCode, score, totalQuestions);
-}
-  )
-  .subscribe();
+    { event: 'INSERT', schema: 'public', table: 'scores' }, // ሰንጠረዡ 'scores' መሆኑን ያረጋግጡ
+    (payload) => {
+      console.log('🔔 አዲስ መረጃ በዳታቤዝ ውስጥ ገብቷል:', payload.new); // መረጃው መግባቱን ማረጋገጫ ሎግ
+      
+      const newResult = payload.new;
+      
+      // ⚠️ በ Supabase ዳታቤዝዎ ላይ ያሉትን የአምድ ስሞች በትክክል መውሰዱን ያረጋግጣል
+      const studentChatId = newResult.chat_id || newResult.student_id || newResult.telegram_id; 
+      const studentName = newResult.student_name || newResult.name || 'ተፈታኝ';
+      const examCode = newResult.exam_code || newResult.code || 'ያልታወቀ';
+      
+      // ጥያቄዎቹ እና ውጤቱ ቁጥር መሆናቸውን ማረጋገጥ (ከ "30/30" አይነት ፅሁፍ የተከፈለ ከሆነም እንዲሰራ)
+      let score = 0;
+      let totalQuestions = 30; // ነባሪ (Default) መፈተኛ ጥያቄ ብዛት
 
+      if (newResult.score !== undefined) {
+          const scoreStr = String(newResult.score);
+          if (scoreStr.includes('/')) {
+              const parts = scoreStr.split('/');
+              score = Number(parts[0]) || 0;
+              totalQuestions = Number(parts[1]) || 30;
+          } else {
+              score = Number(newResult.score) || 0;
+              totalQuestions = Number(newResult.total_questions) || 30;
+          }
+      }
+
+      console.log(`🔍 በመላክ ላይ... ChatID: ${studentChatId}, ስም: ${studentName}, ውጤት: ${score}/${totalQuestions}`);
+
+      if (studentChatId) {
+          sendFeedbackToStudent(studentChatId, studentName, examCode, score, totalQuestions);
+      } else {
+          console.error('❌ ስህተት፦ ከተፈታኙ መረጃ ላይ የ Telegram Chat ID ማግኘት አልተቻለም።');
+      }
+      
+      // ለአድሚን መላክ
+      sendResultToAdmin(studentName, examCode, `${score}/${totalQuestions}`, totalQuestions);
+    }
+  )
+  .subscribe((status) => {
+      console.log(`📡 የ Supabase Realtime ግንኙነት ሁኔታ፦ ${status}`);
+  });
 
 // =================================================================
 // 📣 ለአድሚኖች ብቻ የፈተና ማሰራጫ (Broadcast)
