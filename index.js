@@ -137,6 +137,102 @@ bot.on('message', async (msg) => {
 });
 
 // =================================================================
+// 🗳️ ለአድሚኖች የዳይናሚክ ድምፅ መስጫ መፍጠሪያ (/poll)
+// =================================================================
+bot.onText(/\/poll\n([\s\S]+)/, (msg, match) => {
+    const chatId = msg.chat.id;
+
+    if (!ADMIN_IDS.includes(chatId)) {
+        return bot.sendMessage(chatId, '❌ ይህንን ትዕዛዝ ለመጠቀም ፈቃድ የለዎትም።');
+    }
+
+    const fullText = match[1].trim();
+    const lines = fullText.split('\n').map(l => l.trim()).filter(l => l !== '');
+
+    const question = lines[0];
+    const options = lines.slice(1);
+
+    if (options.length === 0) {
+        return bot.sendMessage(chatId, '⚠️ እባክዎን ከጥያቄው ስር በ "-" ጀምረው ምርጫዎችን ያስገቡ።\n\nምሳሌ:\n/poll\nጥያቄ እዚህ ይጻፉ\n- ምርጫ 1\n- ምርጫ 2');
+    }
+
+    const pollData = {
+        question: question,
+        options: options.map(opt => ({
+            text: opt.startsWith('-') ? opt.substring(1).trim() : opt,
+            count: 0
+        })),
+        voters: {}
+    };
+
+    const inlineKeyboard = pollData.options.map((opt, index) => [
+        { text: `${opt.text} (${opt.count})`, callback_data: `poll_vote_${index}` }
+    ]);
+
+    bot.sendMessage(GROUP_ID, question, {
+        reply_markup: { inline_keyboard: inlineKeyboard }
+    }).then((sentMsg) => {
+        activePolls[sentMsg.message_id] = pollData;
+        bot.sendMessage(chatId, '✅ ድምፅ መስጫው በይፋ ወደ ግሩፑ ተልኳል!');
+    }).catch((err) => {
+        bot.sendMessage(chatId, `❌ ለግሩፑ መላክ አልተቻለም፡ ${err.message}`);
+    });
+});
+
+// =================================================================
+// 🔘 የአዝራር ድምፅ መቁጠሪያና ለአድሚን መላኪያ (Callback Query Handler)
+// =================================================================
+bot.on('callback_query', (query) => {
+    const msgId = query.message.message_id;
+    const userId = query.from.id;
+    const userName = query.from.first_name || 'ተጠቃሚ';
+    const userHandle = query.from.username ? `@${query.from.username}` : 'የለውም';
+
+    if (!query.data || !query.data.startsWith('poll_vote_')) return;
+
+    const optionIndex = parseInt(query.data.split('_')[2]);
+    const poll = activePolls[msgId];
+
+    if (!poll) {
+        return bot.answerCallbackQuery(query.id, { text: 'ይህ ድምፅ መስጫ ጊዜው አልፏል ወይም አልተገኘም።' });
+    }
+
+    if (poll.voters[userId] !== undefined) {
+        return bot.answerCallbackQuery(query.id, {
+            text: '⚠️ አንድ ጊዜ ብቻ ነው ድምፅ መስጠት የሚችሉት!',
+            show_alert: true
+        });
+    }
+
+    poll.voters[userId] = optionIndex;
+    poll.options[optionIndex].count += 1;
+
+    const selectedText = poll.options[optionIndex].text;
+
+    const updatedKeyboard = poll.options.map((opt, index) => [
+        { text: `${opt.text} (${opt.count})`, callback_data: `poll_vote_${index}` }
+    ]);
+
+    bot.editMessageReplyMarkup(
+        { inline_keyboard: updatedKeyboard },
+        { chat_id: GROUP_ID, message_id: msgId }
+    ).catch(err => console.error('Keyboard Update Error:', err));
+
+    bot.answerCallbackQuery(query.id, {
+        text: `ድምፅዎ ተመዝግቧል፡ "${selectedText}"`,
+        show_alert: false
+    });
+
+    // ለአድሚኖች ማሳወቅ
+    ADMIN_IDS.forEach(adminId => {
+        bot.sendMessage(
+            adminId,
+            `📥 **አዲስ ድምፅ ተሰጥቷል!**\n\n👤 **ስም:** ${userName}\n🔗 **Username:** ${userHandle}\n✅ **የመረጠው:** ${selectedText}\n📊 **የዚህ አዝራር አጠቃላይ ድምፅ:** ${poll.options[optionIndex].count}`
+        ).catch(err => console.error(`ለአድሚን ${adminId} ማሳወቂያ መላክ አልተቻለም:`, err));
+    });
+});
+
+// =================================================================
 // 🌟 1. ተፈታኙ ፈተናውን ሲጨርስ የማበረታቻ/የማሻሻያ መልዕክት ለባለቤቱ መላኪያ
 // =================================================================
 function sendFeedbackToStudent(studentChatId, studentName, examCode, score, totalQuestions) {
