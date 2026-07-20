@@ -8,6 +8,49 @@ const cron = require('node-cron');
 
 // 📊 የድምፅ መስጫዎችን (Polls) በሜሞሪ መያዣ (በኮዱ አናት ላይ ተቀምጧል)
 const activePolls = {};
+// 🎨 የአዝራሮችን ጽሑፍ ርዝመት አይቶ በዳይናሚክ መንገድ ወደ ጎን ወይም ወደ ታች የሚያደርጅ ፈንክሽን
+// 🎨 የድምፅ መስጫ አዝራሮችንና ሊንኮችን የሚያደርጅ ፈንክሽን
+function buildPollKeyboard(options, extraLinks = []) {
+    const inlineKeyboard = [];
+    let currentRow = [];
+    let currentRowCharCount = 0;
+
+    options.forEach((opt, index) => {
+        const btnText = `${opt.text} (${opt.count})`;
+        const btnLength = btnText.length;
+
+        const isRowFull = currentRow.length >= 4;
+        const isCharLimitReached = (currentRowCharCount + btnLength) > 22;
+        const isSingleTextLong = btnLength > 10;
+
+        if (currentRow.length > 0 && (isRowFull || isCharLimitReached || isSingleTextLong)) {
+            inlineKeyboard.push(currentRow);
+            currentRow = [];
+            currentRowCharCount = 0;
+        }
+
+        currentRow.push({
+            text: btnText,
+            callback_data: `poll_vote_${index}`
+        });
+
+        currentRowCharCount += btnLength;
+    });
+
+    if (currentRow.length > 0) {
+        inlineKeyboard.push(currentRow);
+    }
+
+    if (extraLinks && extraLinks.length > 0) {
+        extraLinks.forEach(linkObj => {
+            inlineKeyboard.push([
+                { text: linkObj.title, url: linkObj.url }
+            ]);
+        });
+    }
+
+    return inlineKeyboard;
+}
 
 // *** የቦት ቶከን ***
 const TOKEN = '8778040791:AAFMzEidaDflppu8bNjS8MOOnmIEZNC4OA0'; 
@@ -144,7 +187,23 @@ bot.onText(/\/poll\n([\s\S]+)/, async (msg, match) => {
     const lines = fullText.split('\n').map(l => l.trim()).filter(l => l !== '');
 
     const question = lines[0];
-    const rawOptions = lines.slice(1);
+    const extraLinks = [];
+    const rawOptions = [];
+
+    lines.slice(1).forEach(line => {
+        if (line.toLowerCase().startsWith('ሊንክ:') || line.toLowerCase().startsWith('link:')) {
+            const rawContent = line.replace(/^(ሊንክ:|link:)/i, '').trim();
+            
+            if (rawContent.includes('|')) {
+                const [title, url] = rawContent.split('|').map(s => s.trim());
+                extraLinks.push({ title: title, url: url });
+            } else {
+                extraLinks.push({ title: '🔗 ወደ ሌላው ቦት/ቻናል ይሂዱ', url: rawContent });
+            }
+        } else {
+            rawOptions.push(line);
+        }
+    });
 
     if (rawOptions.length === 0) {
         return bot.sendMessage(chatId, '⚠️ እባክዎን ከጥያቄው ስር በ "-" ጀምረው ምርጫዎችን ያስገቡ።\n\nምሳሌ:\n/poll\nጥያቄ እዚህ ይጻፉ\n- ምርጫ 1\n- ምርጫ 2');
@@ -155,20 +214,18 @@ bot.onText(/\/poll\n([\s\S]+)/, async (msg, match) => {
         count: 0
     }));
 
-    const inlineKeyboard = options.map((opt, index) => [
-        { text: `${opt.text} (${opt.count})`, callback_data: `poll_vote_${index}` }
-    ]);
+    const inlineKeyboard = buildPollKeyboard(options, extraLinks);
 
     try {
         const sentMsg = await bot.sendMessage(GROUP_ID, question, {
             reply_markup: { inline_keyboard: inlineKeyboard }
         });
 
-        // በሜሞሪ ውስጥ መረጃውን መያዝ
         activePolls[sentMsg.message_id] = {
             question: question,
             options: options,
-            voters: {}
+            voters: {},
+            extraLinks: extraLinks
         };
 
         bot.sendMessage(chatId, '✅ ድምፅ መስጫው በይፋ ወደ ግሩፑ ተልኳል!');
@@ -211,9 +268,8 @@ bot.on('callback_query', async (query) => {
 
     const selectedText = poll.options[optionIndex].text;
 
-    const updatedKeyboard = poll.options.map((opt, index) => [
-        { text: `${opt.text} (${opt.count})`, callback_data: `poll_vote_${index}` }
-    ]);
+// ድምፅ ሲሰጥ ውጤቱን እና ሊንኮቹን አብሮ ማደሻ
+    const updatedKeyboard = buildPollKeyboard(poll.options, poll.extraLinks || []);
 
     try {
         await bot.editMessageReplyMarkup(
@@ -222,8 +278,8 @@ bot.on('callback_query', async (query) => {
         );
     } catch (err) {
         console.error('Keyboard Update Error:', err);
-    }
-
+    }  
+  
     bot.answerCallbackQuery(query.id, {
         text: `ድምፅዎ ተመዝግቧል፡ "${selectedText}"`,
         show_alert: false
