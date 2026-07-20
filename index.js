@@ -174,7 +174,7 @@ bot.on('message', async (msg) => {
 });
 
 // =================================================================
-// 🗳️ ለአድሚኖች የዳይናሚክ ድምፅ መስጫ መፍጠሪያ (/poll)
+// 🗳️ ለአድሚኖች የዳይናሚክ ድምፅ መስጫ እና ማስታወቂያ መፍጠሪያ (/poll)
 // =================================================================
 bot.onText(/\/poll\n([\s\S]+)/, async (msg, match) => {
     const chatId = msg.chat.id;
@@ -190,6 +190,7 @@ bot.onText(/\/poll\n([\s\S]+)/, async (msg, match) => {
     const extraLinks = [];
     const rawOptions = [];
 
+    // መስመሮቹን መለየት (ምርጫዎች እና ሊንኮች)
     lines.slice(1).forEach(line => {
         if (line.toLowerCase().startsWith('ሊንክ:') || line.toLowerCase().startsWith('link:')) {
             const rawContent = line.replace(/^(ሊንክ:|link:)/i, '').trim();
@@ -200,17 +201,19 @@ bot.onText(/\/poll\n([\s\S]+)/, async (msg, match) => {
             } else {
                 extraLinks.push({ title: '🔗 ወደ ሌላው ቦት/ቻናል ይሂዱ', url: rawContent });
             }
-        } else {
-            rawOptions.push(line);
+        } else if (line.startsWith('-')) {
+            // በ "-" የጀመሩትን ብቻ እንደ ድምፅ መስጫ ምርጫ መውሰድ
+            rawOptions.push(line.substring(1).trim());
         }
     });
 
-    if (rawOptions.length === 0) {
-        return bot.sendMessage(chatId, '⚠️ እባክዎን ከጥያቄው ስር በ "-" ጀምረው ምርጫዎችን ያስገቡ።\n\nምሳሌ:\n/poll\nጥያቄ እዚህ ይጻፉ\n- ምርጫ 1\n- ምርጫ 2');
+    // 🌟 ማስተካከያ፦ ምርጫዎችም ሆነ ሊንኮች ከሌሉ ብቻ ማስጠንቀቂያ ይሰጣል
+    if (rawOptions.length === 0 && extraLinks.length === 0) {
+        return bot.sendMessage(chatId, '⚠️ እባክዎን ከጽሑፉ ስር በ "-" ጀምረው ምርጫዎችን ወይም "ሊንክ:" ያስገቡ።');
     }
 
     const options = rawOptions.map(opt => ({
-        text: opt.startsWith('-') ? opt.substring(1).trim() : opt,
+        text: opt,
         count: 0
     }));
 
@@ -221,14 +224,17 @@ bot.onText(/\/poll\n([\s\S]+)/, async (msg, match) => {
             reply_markup: { inline_keyboard: inlineKeyboard }
         });
 
-        activePolls[sentMsg.message_id] = {
-            question: question,
-            options: options,
-            voters: {},
-            extraLinks: extraLinks
-        };
+        // ምርጫዎች ካሉ ብቻ በ activePolls ይመዘግባል
+        if (options.length > 0) {
+            activePolls[sentMsg.message_id] = {
+                question: question,
+                options: options,
+                voters: {},
+                extraLinks: extraLinks
+            };
+        }
 
-        bot.sendMessage(chatId, '✅ ድምፅ መስጫው በይፋ ወደ ግሩፑ ተልኳል!');
+        bot.sendMessage(chatId, '✅ መልእክቱ/ድምፅ መስጫው በይፋ ወደ ግሩፑ ተልኳል!');
     } catch (err) {
         bot.sendMessage(chatId, `❌ ለግሩፑ መላክ አልተቻለም፡ ${err.message}`);
     }
