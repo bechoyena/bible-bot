@@ -6,11 +6,14 @@ const TelegramBot = require('node-telegram-bot-api');
 const { createClient } = require('@supabase/supabase-js');
 const cron = require('node-cron');
 
+// 📊 የድምፅ መስጫዎችን (Polls) በሜሞሪ መያዣ (በኮዱ አናት ላይ ተቀምጧል)
+const activePolls = {};
+
 // *** የቦት ቶከን ***
 const TOKEN = '8778040791:AAFMzEidaDflppu8bNjS8MOOnmIEZNC4OA0'; 
 const bot = new TelegramBot(TOKEN, { polling: true });
 
-// *** የ Supabase መረጃዎች (የተስተካከለ) ***
+// *** የ Supabase መረጃዎች ***
 const SUPABASE_URL = 'https://jdusgofvctxmfgrnrgjq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkdXNnb2Z2Y3R4bWZncm5yZ2pxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjgwMjQ3MiwiZXhwIjoyMDk4Mzc4NDcyfQ.J-aBPwvBOD7PPb9YTXd28yuUnuXhp3xARslADs31MNY'; 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -47,7 +50,6 @@ bot.onText(/\/test/, (msg) => {
     bot.sendMessage(msg.chat.id, `✅ ቦቱ 100% በሰላም እየሰራ ነው!`, mainKeyboard);
 });
 
-// 🔄 ከዳታቤዝ ላይ ፈተናዎችን የሚስብ ክፍል
 // 🔄 ከዳታቤዝ ላይ ፈተናዎችን በምዕራፍ/በመጽሐፍ ዝርዝር የሚስብ ክፍል
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
@@ -55,7 +57,6 @@ bot.on('message', async (msg) => {
 
     if (text && text.startsWith('/')) return;
 
-    // 39ኙ የብሉይ ኪዳን መጻሕፍት ዝርዝር (ከመጻፊያው በታች የሚመቱ)
     const oldTestamentBooks = [
         ['ዘፍጥረት', 'ዘፀዓት', 'ዘሌዋውያን'], ['ዘኁልቁ', 'ዘዳግም', 'ኢያሱ'],
         ['መሣፍንት', 'ሩት', '1 ሳሙኤል'], ['2 ሳሙኤል', '1 ነገሥት', '2 ነገሥት'],
@@ -67,24 +68,21 @@ bot.on('message', async (msg) => {
         ['🔙 ወደ ዋና ማውጫ']
     ];
 
-    // 27ቱ የአዲስ ኪዳን መጻሕፍት ዝርዝር (ከመጻፊያው በታች የሚመቱ)
     const newTestamentBooks = [
         ['ማቴዎስ', 'ማርቆስ', 'ሉቃስ'], ['ዮሐንስ', 'ሐዋርያት'],
         ['ሮሜ', '1 ቆሮንቶስ', '2 ቆሮንቶስ'], ['ገላትያ', 'ኤፌሶን', 'ፊልጵስዩስ'],
-        ['ቆላስይስ', '1 ተሰሎንቄ', '2 2 ተሰሎንቄ'], ['1 ጢሞቴዎስ', '2 ጢሞቴዎስ', 'ቲቶ'],
+        ['ቆላስይስ', '1 ተሰሎንቄ', '2 ተሰሎንቄ'], ['1 ጢሞቴዎስ', '2 ጢሞቴዎስ', 'ቲቶ'],
         ['ፊልሞና', 'ዕብራውያን', 'ያዕቆብ'], ['1 ጴጥሮስ', '2 ጴጥሮስ', '1 ዮሐንስ'],
         ['2 ዮሐንስ', '3 ዮሐንስ', 'ይሁዳ'], ['ዮሐንስ ራዕይ'],
         ['🔙 ወደ ዋና ማውጫ']
     ];
 
-    // የአጠቃላይ ምርጫዎች ዝርዝር (ከመጻፊያው በታች የሚመቱ)
     const generalOptions = [
         [{ text: 'የብሉይ ኪዳን ጥያቄዎች' }, { text: 'የአዲስ ኪዳን ጥያቄዎች' }],
         [{ text: '🔙 ወደ ዋና ማውጫ' }]
     ];
 
     try {
-        // --- 1. ዋና ቁልፎች ሲነኩ ከመጻፊያው በታች አማራጭ ማሳየት ---
         if (text === '📖 ብሉይ ኪዳን') {
             return bot.sendMessage(chatId, 'የብሉይ ኪዳን መጽሐፍትን ከታች ይምረጡ፦', {
                 reply_markup: { keyboard: oldTestamentBooks, resize_keyboard: true }
@@ -104,25 +102,21 @@ bot.on('message', async (msg) => {
             return bot.sendMessage(chatId, 'ወደ ዋናው ማውጫ ተመልሰዋል፦', mainKeyboard);
         }
 
-        // --- 2. ማንኛውም ንዑስ ክፍል ሲነካ በየምድቡ (Category) ያሉትን ሁሉንም ፈተናዎች ከመጻፊያው በላይ ማምጣት ---
         const allOldBooks = oldTestamentBooks.flat();
         const allNewBooks = newTestamentBooks.flat();
         
         if (allOldBooks.includes(text) || allNewBooks.includes(text) || text === 'የብሉይ ኪዳን ጥያቄዎች' || text === 'የአዲስ ኪዳን ጥያቄዎች') {
             
-            // 💡 ማሳሰቢያ፦ በ Supabase 'exams' ሰንጠረዥ ውስጥ በ 'category' አምድ ስር የተጫነውን ስም ፈልጎ ያመጣል
-            // (ለምሳሌ፦ በ category አምድ ላይ "የብሉይ ኪዳን ጥያቄዎች" ተብለው የተመዘገቡትን "ብሉይ ኪዳን - 1"፣ "ብሉይ ኪዳን - 2" የተባሉ ርዕሶችን በሙሉ ይስባል)
             const { data, error } = await supabase
                 .from('exams')
                 .select('*')
                 .eq('category', text)
-                .order('title', { ascending: true }); // በቅደም ተከተል እንዲመጡ
+                .order('title', { ascending: true });
 
             if (error || !data || data.length === 0) {
-                return bot.sendMessage(chatId, `❌ ለ "${text}" የተዘጋጁ የፈተና ዝርዝሮች በዳታቤዝ ውስጥ አልተገኑም።`);
+                return bot.sendMessage(chatId, `❌ ለ "${text}" የተዘጋጁ የፈተና ዝርዝሮች በዳታቤዝ ውስጥ አልተገኙም።`);
             }
 
-            // የመጡትን ፈተናዎች በሙሉ (ለምሳሌ፦ ብሉይ ኪዳን-1፣ ብሉይ ኪዳን-2...) ወደ ሰማያዊ Inline ቁልፍ መቀየር
             const inlineButtons = data.map(exam => [{ text: `🚀 ${exam.title}`, web_app: { url: exam.link } }]);
             
             bot.sendMessage(chatId, `✨ ለ "${text}" የተገኙ ፈተናዎች ዝርዝር ከመጻፊያው በላይ ቀርቧል። መፈተን የሚፈልጉትን መርጠው ይጫኑ፦`, {
@@ -132,14 +126,14 @@ bot.on('message', async (msg) => {
 
     } catch (err) {
         console.error('Supabase Fetch Error:', err);
-        bot.sendMessage(chatId, '❌ መረጃ ከዳታቤዝ ላይ ሲሳብ ስህተት አጋጥሟል።');
+        bot.sendMessage(chatId, '❌ መረጃ ከዳታቤዝ ላይ ሲሳብ ስህተት አጋጥሟል።', mainKeyboard);
     }
 });
 
 // =================================================================
 // 🗳️ ለአድሚኖች የዳይናሚክ ድምፅ መስጫ መፍጠሪያ (/poll)
 // =================================================================
-bot.onText(/\/poll\n([\s\S]+)/, (msg, match) => {
+bot.onText(/\/poll\n([\s\S]+)/, async (msg, match) => {
     const chatId = msg.chat.id;
 
     if (!ADMIN_IDS.includes(chatId)) {
@@ -150,39 +144,43 @@ bot.onText(/\/poll\n([\s\S]+)/, (msg, match) => {
     const lines = fullText.split('\n').map(l => l.trim()).filter(l => l !== '');
 
     const question = lines[0];
-    const options = lines.slice(1);
+    const rawOptions = lines.slice(1);
 
-    if (options.length === 0) {
+    if (rawOptions.length === 0) {
         return bot.sendMessage(chatId, '⚠️ እባክዎን ከጥያቄው ስር በ "-" ጀምረው ምርጫዎችን ያስገቡ።\n\nምሳሌ:\n/poll\nጥያቄ እዚህ ይጻፉ\n- ምርጫ 1\n- ምርጫ 2');
     }
 
-    const pollData = {
-        question: question,
-        options: options.map(opt => ({
-            text: opt.startsWith('-') ? opt.substring(1).trim() : opt,
-            count: 0
-        })),
-        voters: {}
-    };
+    const options = rawOptions.map(opt => ({
+        text: opt.startsWith('-') ? opt.substring(1).trim() : opt,
+        count: 0
+    }));
 
-    const inlineKeyboard = pollData.options.map((opt, index) => [
+    const inlineKeyboard = options.map((opt, index) => [
         { text: `${opt.text} (${opt.count})`, callback_data: `poll_vote_${index}` }
     ]);
 
-    bot.sendMessage(GROUP_ID, question, {
-        reply_markup: { inline_keyboard: inlineKeyboard }
-    }).then((sentMsg) => {
-        activePolls[sentMsg.message_id] = pollData;
+    try {
+        const sentMsg = await bot.sendMessage(GROUP_ID, question, {
+            reply_markup: { inline_keyboard: inlineKeyboard }
+        });
+
+        // በሜሞሪ ውስጥ መረጃውን መያዝ
+        activePolls[sentMsg.message_id] = {
+            question: question,
+            options: options,
+            voters: {}
+        };
+
         bot.sendMessage(chatId, '✅ ድምፅ መስጫው በይፋ ወደ ግሩፑ ተልኳል!');
-    }).catch((err) => {
+    } catch (err) {
         bot.sendMessage(chatId, `❌ ለግሩፑ መላክ አልተቻለም፡ ${err.message}`);
-    });
+    }
 });
 
 // =================================================================
 // 🔘 የአዝራር ድምፅ መቁጠሪያና ለአድሚን መላኪያ (Callback Query Handler)
 // =================================================================
-bot.on('callback_query', (query) => {
+bot.on('callback_query', async (query) => {
     const msgId = query.message.message_id;
     const userId = query.from.id;
     const userName = query.from.first_name || 'ተጠቃሚ';
@@ -194,7 +192,10 @@ bot.on('callback_query', (query) => {
     const poll = activePolls[msgId];
 
     if (!poll) {
-        return bot.answerCallbackQuery(query.id, { text: 'ይህ ድምፅ መስጫ ጊዜው አልፏል ወይም አልተገኘም።' });
+        return bot.answerCallbackQuery(query.id, { 
+            text: '⚠️ ይህ ድምፅ መስጫ ጊዜው አልፏል ወይም ቦቱ በመታደሱ ምክንያት መረጃው ጠፍቷል!',
+            show_alert: true 
+        });
     }
 
     if (poll.voters[userId] !== undefined) {
@@ -204,6 +205,7 @@ bot.on('callback_query', (query) => {
         });
     }
 
+    // ድምፅ መመዝገብ
     poll.voters[userId] = optionIndex;
     poll.options[optionIndex].count += 1;
 
@@ -213,10 +215,14 @@ bot.on('callback_query', (query) => {
         { text: `${opt.text} (${opt.count})`, callback_data: `poll_vote_${index}` }
     ]);
 
-    bot.editMessageReplyMarkup(
-        { inline_keyboard: updatedKeyboard },
-        { chat_id: GROUP_ID, message_id: msgId }
-    ).catch(err => console.error('Keyboard Update Error:', err));
+    try {
+        await bot.editMessageReplyMarkup(
+            { inline_keyboard: updatedKeyboard },
+            { chat_id: GROUP_ID, message_id: msgId }
+        );
+    } catch (err) {
+        console.error('Keyboard Update Error:', err);
+    }
 
     bot.answerCallbackQuery(query.id, {
         text: `ድምፅዎ ተመዝግቧል፡ "${selectedText}"`,
@@ -233,7 +239,7 @@ bot.on('callback_query', (query) => {
 });
 
 // =================================================================
-// 🌟 1. ተፈታኙ ፈተናውን ሲጨርስ የማበረታቻ/የማሻሻያ መልዕክት ለባለቤቱ መላኪያ
+// 🌟 1. ተፈታኙ ፈተናውን ሲጨርስ የማበረታቻ መልዕክት መላኪያ
 // =================================================================
 function sendFeedbackToStudent(studentChatId, studentName, examCode, score, totalQuestions) {
     const percentage = (score / totalQuestions) * 100;
@@ -252,7 +258,7 @@ function sendFeedbackToStudent(studentChatId, studentName, examCode, score, tota
 }
 
 // =================================================================
-// 🔔 2. ውጤትን ለአድሚኖች በዌብ አፕ በተን መልክ "አዲስ የፈተና ውጤት መቷል" በሚል መላኪያ
+// 🔔 2. ውጤትን ለአድሚኖች መላኪያ
 // =================================================================
 function sendResultToAdmin(studentName, examCode, score, totalQuestions) {
     const messageText = `🔔 **አዲስ የፈተና ውጤት መቷል፤ ገብተው ይመልከቱ!**\n\n` +
@@ -266,33 +272,31 @@ function sendResultToAdmin(studentName, examCode, score, totalQuestions) {
             reply_markup: {
                inline_keyboard: [
                    [{ text: "📊 የውጤት መያዣ", url: DASHBOARD_URL }]
-                   ]
+               ]
             }
         }).catch(err => console.error(`ለአድሚን ${adminId} መላክ አልተቻለም:`, err));
     });
 }
 
 // =================================================================
-// ⚡ 3. አዲስ ውጤት ዳታቤዝ ውስጥ ሲገባ ፈንክሽኖቹን የመቀስቀሻ ሰርጥ (የተስተካከለ)
+// ⚡ 3. የ Supabase Realtime Listener
 // =================================================================
 supabase
   .channel('schema-db-changes')
   .on(
     'postgres_changes',
-    { event: 'INSERT', schema: 'public', table: 'scores' }, // ሰንጠረዡ 'scores' መሆኑን ያረጋግጡ
+    { event: 'INSERT', schema: 'public', table: 'scores' },
     (payload) => {
-      console.log('🔔 አዲስ መረጃ በዳታቤዝ ውስጥ ገብቷል:', payload.new); // መረጃው መግባቱን ማረጋገጫ ሎግ
+      console.log('🔔 አዲስ መረጃ በዳታቤዝ ውስጥ ገብቷል:', payload.new);
       
       const newResult = payload.new;
       
-      // ⚠️ በ Supabase ዳታቤዝዎ ላይ ያሉትን የአምድ ስሞች በትክክል መውሰዱን ያረጋግጣል
       const studentChatId = newResult.chat_id || newResult.student_id || newResult.telegram_id; 
       const studentName = newResult.student_name || newResult.name || 'ተፈታኝ';
       const examCode = newResult.exam_code || newResult.code || 'ያልታወቀ';
       
-      // ጥያቄዎቹ እና ውጤቱ ቁጥር መሆናቸውን ማረጋገጥ (ከ "30/30" አይነት ፅሁፍ የተከፈለ ከሆነም እንዲሰራ)
       let score = 0;
-      let totalQuestions = 30; // ነባሪ (Default) መፈተኛ ጥያቄ ብዛት
+      let totalQuestions = 30;
 
       if (newResult.score !== undefined) {
           const scoreStr = String(newResult.score);
@@ -306,16 +310,11 @@ supabase
           }
       }
 
-      console.log(`🔍 በመላክ ላይ... ChatID: ${studentChatId}, ስም: ${studentName}, ውጤት: ${score}/${totalQuestions}`);
-
       if (studentChatId) {
           sendFeedbackToStudent(studentChatId, studentName, examCode, score, totalQuestions);
-      } else {
-          console.error('❌ ስህተት፦ ከተፈታኙ መረጃ ላይ የ Telegram Chat ID ማግኘት አልተቻለም።');
       }
       
-      // ለአድሚን መላክ
-      sendResultToAdmin(studentName, examCode, `${score}/${totalQuestions}`, totalQuestions);
+      sendResultToAdmin(studentName, examCode, score, totalQuestions);
     }
   )
   .subscribe((status) => {
@@ -353,44 +352,35 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
     }
 });
 
-// ⏰ በየቀኑ በትክክል ማታ 2:00 ሰዓት (20:00) ሲሆን ይሄ ፈንክሽን ይነሳል
-// (ማሳሰቢያ፦ Render ሰርቨር ላይ ሰዓቱ የለንደን/UTC ከሆነ ከቀኑ 11:00 ሰዓት ማለት ማታ 2:00 ስለሆነ '0 17 * * *' ማድረግ ሊያስፈልግ ይችላል)
-// ⏰ በኢትዮጵያ አቆጣጠር በትክክል ከቀኑ 12:25 (በአገርኛ 6:25) ሲሆን ይልካል
+// =================================================================
+// ⏰ የዕለቱ የመጽሐፍ ቅዱስ ንባብ ፕሮግራም (Cron Job)
+// =================================================================
 cron.schedule('30 0 * * *', async () => {
     console.log('⏰ የንባብ ፕሮግራም ሰዓት ደርሷል፣ ከዳታቤዝ እየፈለግኩ ነው...');
     try {
-        // 1. ሁሉንም 'false' የሆኑትን መረጃዎች መሳብ
         const { data: readings, error } = await supabase
             .from('daily_readings')
             .select('*')
             .eq('is_sent', false)
             .order('id', { ascending: true });
 
-        // የዳታቤዝ ስህተት ካለ በሎግ ላይ እንዲያሳይ
         if (error) {
             console.error('❌ Supabase Error:', error.message);
             return;
         }
 
-        // የመጣው ዳታ ባዶ ከሆነ ስንት ዳታ እንደመጣ ይናገራል
         if (!readings || readings.length === 0) {
-            console.log('⚠️ በ daily_readings ሰንጠረዥ ውስጥ 0 ያልተላከ ጥቅስ ነው የተገኘው! (RLS ወይም የስም ስህተት ሊሆን ይችላል)');
+            console.log('⚠️ በ daily_readings ሰንጠረዥ ውስጥ 0 ያልተላከ ጥቅስ ነው የተገኘው!');
             return;
         }
 
-        // ከመጡት ጥቅሶች ውስጥ የመጀመሪያውን መውሰድ
         const reading = readings[0];
-// 🔢 ቀኑን ከዳታቤዙ ID ላይ መውሰድ
-const dayNumber = reading.id; 
+        const dayNumber = reading.id; 
 
-// 🔄 ካለፈው በእጅ ከነበረው አቆጣጠር ጋር ማጣጣሚያ ሂሳብ (Offset)
-// ከዋናው ቀን ላይ 5 ቀን ቀንሰን በ15 ስናካፍለው አንተ የፈለግከውን ትክክለኛ ቀን ይሰጠናል
-let challengeDay = (dayNumber - 5) % 15;
-
-// ሂሳቡ ወደ ኋላ ሄዶ 0 ወይም ከዜሮ በታች እንዳይሆን መከላከያ
-if (challengeDay <= 0) {
-    challengeDay = challengeDay + 15;
-}
+        let challengeDay = (dayNumber - 5) % 15;
+        if (challengeDay <= 0) {
+            challengeDay = challengeDay + 15;
+        }
 
         const messageText = 
             `${dayNumber}ኛ ቀን፦\n` +
@@ -403,7 +393,6 @@ if (challengeDay <= 0) {
         await bot.sendMessage(GROUP_ID, messageText);
         console.log(`✅ የ ${dayNumber}ኛ ቀን መልዕክት በኢትዮጵያ ሰዓት ተልኳል!`);
         
-        // የተላከውን ጥቅስ ወደ true መቀየር
         await supabase
             .from('daily_readings')
             .update({ is_sent: true })
